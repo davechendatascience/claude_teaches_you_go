@@ -42,7 +42,8 @@ def render_ascii(board, numbers=None, labels=None, marks=None, show_stars=True):
         for c in range(n):
             pt = (r, c)
             v = int(board.grid[pt])
-            if pt in numbers:
+            if pt in numbers and v != EMPTY:
+                # 已經被提掉的子不標號 —— 靜態棋圖上，空點的編號沒有意義
                 d = numbers[pt]
                 if not 1 <= d <= 9:
                     raise ValueError("一張棋圖最多只能標 9 手，超過請分圖（見寫作規範 §4.2）")
