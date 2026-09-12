@@ -110,6 +110,44 @@ def failure_ko():
     print("  「盤面」不足以決定局面 —— 你還得知道剛剛發生了什麼。")
 
 
+def failure_ko_census(depth=7):
+    """這不是一個罕見的邊角情況 —— 把 3 路盤掃一遍數給你看。（約 40 秒）"""
+    from collections import defaultdict
+
+    from go_core.tewari import reachable_states, solve_all
+
+    print("\n" + "=" * 70)
+    print("失效二有多常見？把 3 路盤 7 手之內的局面全掃一遍")
+    print("=" * 70)
+    states = reachable_states(3, depth)
+    table, _ = solve_all(states, n=3)
+
+    def value(key):
+        vals = table[key][1].values()
+        return max(vals) if key[1] == BLACK else min(vals)
+
+    groups = defaultdict(set)
+    for key in table:
+        groups[(key[0], key[1])].add(key)        # 同盤面、同輪次
+    multi = {g: ks for g, ks in groups.items() if len({k[2] for k in ks}) > 1}
+    diff = {g: ks for g, ks in multi.items() if len({value(k) for k in ks}) > 1}
+
+    gaps = sorted(abs(max(value(k) for k in ks) - min(value(k) for k in ks))
+                  for ks in diff.values())
+    print(f"  可解的局面（有合法手）：{len(table)}")
+    print(f"  同盤面、同輪次，但劫狀態不同：{len(multi)} 組")
+    print(f"  其中 V 真的不一樣：          {len(diff)} 組"
+          f"（{len(diff) / len(multi):.0%}）")
+    print(f"  V 的差距：最小 {min(gaps):.0f} 目、最大 {max(gaps):.0f} 目")
+    from collections import Counter
+    for g, c in sorted(Counter(gaps).items()):
+        print(f"    差 {g:>2.0f} 目：{c} 組")
+    assert len(multi) == 196 and len(diff) == 72
+    assert max(gaps) == 18
+    print("\n  三分之一以上的情況下，「同一個盤面」的 V 真的不同。")
+    print("  手割假設盤面決定一切 —— 這 72 組就是那個假設的反例。")
+
+
 def failure_move_count():
     print("\n" + "=" * 70)
     print("失效三：雙方手數必須各自不變")
@@ -174,6 +212,7 @@ def main():
     layer_one()
     failure_capture()
     failure_ko()
+    failure_ko_census()
     failure_move_count()
     layer_two()
 
