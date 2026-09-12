@@ -70,6 +70,23 @@ def check(path, verbose=False):
     text = Path(path).read_text(encoding="utf-8")
     name = Path(path).name
     problems, notes = [], []
+    is_chapter = Path(path).parent.name == "chapters"
+
+    if not is_chapter:
+        # docs/ 底下的檔案只查「機械性」的問題：雜字元與 tab。
+        # 這兩種都是反斜線跳脫被誤解造成的，而且肉眼看不出來。
+        stray = {}
+        for ch in text:
+            s = script_of(ch)
+            if s and s not in ALLOWED_SCRIPTS:
+                stray.setdefault(s, set()).add(ch)
+        for s, chars in stray.items():
+            problems.append(f"混入 {s} 字元：{''.join(sorted(chars))}")
+        if "\t" in text:
+            n = sum(1 for l in text.split("\n") if "\t" in l)
+            problems.append(f"{n} 行含有 tab 字元（很可能是 LaTeX 的反斜線被吃掉）")
+        notes.append(f"{len(text)} 字元")
+        return problems, notes
 
     # --- 結構 -------------------------------------------------------
     h2 = re.findall(r"^## (.*)$", text, re.M)
