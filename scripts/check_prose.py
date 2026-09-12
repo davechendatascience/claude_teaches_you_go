@@ -40,6 +40,23 @@ BADGE_MAX = {"EUREKA": 1}
 ALLOWED_SCRIPTS = ("CJK", "LATIN", "DIGIT", "HIRAGANA", "KATAKANA", "GREEK")
 
 
+# 看不見的控制字元。來源：shell heredoc 把 LaTeX 的 \v、\b、\f 這些反斜線
+# 序列解讀成控制字元，於是 \varnothing 變成 <VT>arnothing、\boxed 變成
+# <BS>oxed。編輯器裡完全看不出來，但公式已經壞了 —— 校對時抓到 4 個。
+CTRL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+CTRL_NAMES = {0x07: r"\a", 0x08: r"\b", 0x0b: r"\v", 0x0c: r"\f", 0x1b: r"\e"}
+
+
+def control_chars(text):
+    """回傳 [(行號, 碼位, 前後文), ...]。"""
+    out = []
+    for m in CTRL.finditer(text):
+        line = text[:m.start()].count("\n") + 1
+        ctx = CTRL.sub("<?>", text[max(0, m.start() - 25):m.start() + 25])
+        out.append((line, ord(m.group(0)), ctx.replace("\n", " ")))
+    return out
+
+
 def script_of(ch):
     """粗略判斷一個字元屬於哪個文字系統。"""
     o = ord(ch)
@@ -85,6 +102,9 @@ def check(path, verbose=False):
         if "\t" in text:
             n = sum(1 for l in text.split("\n") if "\t" in l)
             problems.append(f"{n} 行含有 tab 字元（很可能是 LaTeX 的反斜線被吃掉）")
+        for line, o, ctx in control_chars(text):
+            problems.append(f"L{line} 控制字元 U+{o:04X}"
+                            f"（原本很可能是 {CTRL_NAMES.get(o, chr(63))}）：...{ctx}...")
         notes.append(f"{len(text)} 字元")
         return problems, notes
 
@@ -140,6 +160,9 @@ def check(path, verbose=False):
     # --- 其他 -------------------------------------------------------
     if "\t" in text:
         problems.append("含有 tab 字元（很可能是反斜線跳脫被誤解）")
+    for line, o, ctx in control_chars(text):
+        problems.append(f"L{line} 控制字元 U+{o:04X}"
+                        f"（原本很可能是 {CTRL_NAMES.get(o, chr(63))}）：...{ctx}...")
     diagrams = len(re.findall(r"<!-- diagram:", text))
     blocks = len(re.findall(r"```python", text))
     notes.append(f"棋圖 {diagrams} 張、python 區塊 {blocks} 個")

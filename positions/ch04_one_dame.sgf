@@ -1,1 +1,1 @@
-(;GM[1]FF[4]CA[UTF-8]SZ[4]AB[ad][bd][bb][cd][cb][dd][dc][db][da]AW[ac][ab][aa][bc][ba][ca]LB[cc:a]C[a 是全盤唯一的空點，也是雙方唯一的氣（外氣都是 0，公氣 1）。誰先下 a，誰就提掉對方 —— 因為提子發生在自殺判定之前。])
+(;GM[1]FF[4]CA[UTF-8]SZ[4]AB[ad][bd][bb][cd][cb][dd][dc][db][da]AW[ac][ab][aa][bc][ba][ca]LB[cc:p]C[p 是全盤唯一的空點，也是雙方唯一的氣（外氣都是 0，公氣 1）。誰先下 p，誰就提掉對方 —— 因為提子發生在自殺判定之前。])

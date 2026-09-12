@@ -53,7 +53,7 @@ POSITIONS = {
     "ch05_ko_taken": dict(
         AB=b1, AW=[s for s in w1 if s != victim1],
         LB={victim1: "b"},
-        comment="黑提之後。現在輪到白，而 b 這一點白下下去就能把黑那顆子提回來 ——"
+        comment="黑提之後。現在輪到白，而 b 這一點白下下去就能把黑那顆子提回來 —— "
                 "盤面會【一模一樣】地回到上一張圖。如果允許，兩人可以這樣提到天荒地老。",
     ),
 
