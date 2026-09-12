@@ -470,15 +470,30 @@ $$\boxed{\;C(1) = *, \qquad C(n) = \{\, n-1 \;\mid\; C(n-1) \,\}\;}$$
 
 到這裡有一個問題應該浮現了：**§4.4 講了半目與四分之一目，可是上面所有的例子，值不是整數就是 $*$ 或走廊，一個真分數都沒有。**
 
-這不是巧合。寫這一章的時候，我用程式**掃了 7,611 個隨機生成的小局部**（$4\times4$ 與 $5\times5$ 的盤面，1 到 5 個空點），統計它們的值：
+這不是巧合。寫這一章的時候，我用程式掃了 **40,000 個隨機生成的單一局部**（$4\times4$ 與 $5\times5$ 的盤面，取一塊 1 到 4 個空點的**連通**區域，其餘空點填實），統計它們的值：
 
 | 值的類型 | 個數 |
 | :--- | ---: |
-| 整數 | 1,943 |
-| 不是數（星、走廊、開關……） | 5,668 |
+| 整數 | 12,938 |
+| 不是數（星、走廊、開關……） | 27,062 |
 | **真分數（$\tfrac12$、$\tfrac14$……）** | **0** |
 
 一個都沒有。
+
+**但故事還有下半段，而它是校對這本書的時候才發現的。**
+
+如果把盤上**所有**空點合起來當成「一個區域」——那其實不是一個局部，是**若干個互不相連的局部的和** ——結果就不一樣了：
+
+| 樣本 | 個數 | 真分數 |
+| :--- | ---: | ---: |
+| 單一連通局部 | 40,000 | **0** |
+| 不相連的空點合成一區（也就是「和」） | 7,075 | **1** |
+
+那唯一的一個是 $\tfrac12$，出現在一個 $5\times5$ 的盤面上，空點是 E5、A2、D1、E1 —— 三塊互不相連的地方。
+
+$$\boxed{\ \textbf{真分數不是不會出現，是它出現在「和」裡，不在單一局部裡。}\ }$$
+
+**而這正好是簡單性規則預測的事。** 定理 6.8 要的是「黑動一手虧、白動一手也虧，而且虧的量把值卡在半目」。一個**單一**的圍棋局部很難剛好長成那樣；但好幾個局部**加起來**，就有機會湊出來 —— 加法本來就是製造中間值的機器。
 
 **為什麼？** 回頭看定理 6.8。要得到 $\tfrac12$，需要 $\{0 \mid 1\}$ —— 黑的最佳選項是 $0$、白的最佳選項是 $1$，而且黑的**比較小**。翻譯回棋：黑動一手虧一目，白動一手也虧一目，而且虧的量剛好讓中間值落在半目上。
 
@@ -498,7 +513,9 @@ $$\boxed{\;C(1) = *, \qquad C(n) = \{\, n-1 \;\mid\; C(n-1) \,\}\;}$$
 >
 > 這個區別在第 7 章會變得非常重要，因為**收官排序用的是溫度，而形勢判斷用的是均值** —— 兩個不同的數，來自同一個賽局。
 >
-> **誠實聲明**：上面那個 0 是一個**搜尋結果**，不是定理。搜尋範圍是 $\le 5\times5$ 的盤面、$\le 5$ 個空點、約定 6.1 的記分法。更大的盤面、或別的記分法（例如中國規則），可能會有不同的結果。本書不宣稱「圍棋局部的值不可能是真分數」——只報告在這個範圍內沒有找到。
+> **誠實聲明**：上面那個 0 是一個**搜尋結果**，不是定理。搜尋範圍是 $\le 5\times5$ 的盤面、一塊 $\le 4$ 個空點的連通區域、約定 6.1 的記分法。更大的盤面、或別的記分法（例如中國規則），可能會有不同的結果。本書不宣稱「圍棋局部的值不可能是真分數」——只報告在這個範圍內沒有找到。
+>
+> **而且範圍一放寬就找到了**：把不相連的空點合起來當一個區域（那是若干局部的**和**），7,075 個樣本裡出現了一個 $\tfrac12$。所以正確的說法不是「圍棋沒有真分數」，是「**真分數出現在和裡，不在單一局部裡**」。這個修正本身就是「搜尋結果不是定理」最好的示範 —— 第一版的搜尋範圍太小，結論就過強了。
 
 ### 4.6 見合
 
@@ -649,48 +666,90 @@ print(f"  * + * 的勝負類別：{(STAR + STAR).outcome()}  -> 見合")
 ### 5.3 值的類型普查
 
 ```python
-"""第 6 章 §4.5：圍棋局部的值到底長什麼樣？普查一遍。"""
+"""第 6 章 §4.5：真分數在單一局部裡找不到，在【和】裡找得到。"""
 import random
 from collections import Counter
+
 from go_core import BLACK, EMPTY, WHITE, Board
+from go_core.board import neighbors
 from go_core.endgame import region_value
 
-random.seed(17)
-kinds = Counter()
-examples = {}
-for _ in range(1200):
-    n = random.choice([4, 5])
-    b = Board(n)
-    pts = [(r, c) for r in range(n) for c in range(n)]
-    for p in pts:
-        b.grid[p] = random.choices([EMPTY, BLACK, WHITE], [0.30, 0.36, 0.34])[0]
-    empties = [p for p in pts if b.grid[p] == EMPTY]
-    if not 1 <= len(empties) <= 4:
-        continue
-    try:
-        g = region_value(b, frozenset(empties), max_depth=8).canonical()
-    except Exception:
-        continue
+
+def components(pts, n):
+    """把一組點切成連通分量。"""
+    pts, out = set(pts), []
+    while pts:
+        seed = pts.pop()
+        comp, stack = {seed}, [seed]
+        while stack:
+            q = stack.pop()
+            for r in neighbors(q, n):
+                if r in pts:
+                    pts.discard(r)
+                    comp.add(r)
+                    stack.append(r)
+        out.append(comp)
+    return out
+
+
+def kind_of(board, region):
+    g = region_value(board, frozenset(region), max_depth=8).canonical()
     num = g.as_number(3, 6)
     if num is None:
-        kinds["不是數"] += 1
-    elif num.denominator == 1:
-        kinds["整數"] += 1
-    else:
-        kinds["真分數"] += 1
-        examples.setdefault(num, str(b))
+        return "不是數", None
+    return ("整數" if num.denominator == 1 else "真分數"), num
 
-total = sum(kinds.values())
-print(f"普查 {total} 個局部：")
+
+# --- 一、單一連通局部（其餘空點填實，讓它真的孤立）---------------------
+rng = random.Random(6)
+single = Counter()
+while sum(single.values()) < 3000:
+    n = rng.choice([4, 5])
+    b = Board(n)
+    pts = [(r, c) for r in range(n) for c in range(n)]
+    for q in pts:
+        b.grid[q] = rng.choices([EMPTY, BLACK, WHITE], [0.30, 0.36, 0.34])[0]
+    comps = [c for c in components([q for q in pts if b.grid[q] == EMPTY], n)
+             if 1 <= len(c) <= 4]
+    if not comps:
+        continue
+    region = rng.choice(comps)
+    for q in pts:                       # 其餘空點填實
+        if b.grid[q] == EMPTY and q not in region:
+            b.grid[q] = rng.choice([BLACK, WHITE])
+    single[kind_of(b, region)[0]] += 1
+
+print(f"單一連通局部 {sum(single.values())} 個：")
 for k in ["整數", "不是數", "真分數"]:
-    print(f"  {k:<6} {kinds[k]:>5}")
-assert total > 100
-assert kinds["真分數"] == 0, f"找到真分數了：{examples}"
+    print(f"  {k:<6}{single[k]:>6}")
+assert single["真分數"] == 0
+
+# --- 二、那個唯一的真分數：三塊不相連的空點加起來 ----------------------
+b = Board(5)
+b.place_many(BLACK, ["C5", "D5", "A4", "D4", "E4", "A3",
+                     "B2", "C2", "D2", "E2", "B1"])
+b.place_many(WHITE, ["A5", "B5", "B4", "C4", "B3", "C3", "D3", "E3",
+                     "A1", "C1"])
 print()
-print("真分數：0 個。半目不在【值】裡，在【均值】裡 —— 那是第 7 章。")
+print(b)
+empties = ["E5", "A2", "D1", "E1"]
+comps = components([b._pt(q) for q in empties], 5)
+print(f"  這四個空點分成 {len(comps)} 塊互不相連的地方 —— 它是一個【和】")
+whole = region_value(b, empties, max_depth=8).canonical()
+print(f"  合起來的值 = {whole!r}  =  {whole.as_number(3, 6)}")
+assert len(comps) == 3
+assert whole.as_number(3, 6) is not None
+assert whole.as_number(3, 6).denominator == 2
+
+print()
+print("  單一局部：3000 個，真分數 0 個。")
+print("  若干局部的和：這一個就是 1/2。")
+print("  真分數不是不會出現，是它出現在【和】裡 —— 加法是製造中間值的機器。")
 ```
 
-**輸出裡該看什麼。** 最後那個 0。這是本章唯一一個**推翻了作者原本假設**的結果 —— 寫大綱的時候我以為「半目的局部真的存在，會給實際盤面」，程式說沒有。§4.5 的 IMPORTANT 方塊就是這次修正。
+**輸出裡該看什麼。** 兩段要一起看。第一段是 3000 個單一局部、真分數 **0** 個；第二段是**一個具體的盤面**，四個空點分成三塊互不相連的地方，合起來的值就是 $\tfrac12$。
+
+**這是本章被程式修正了兩次的地方。** 第一次：寫大綱時我以為「半目的局部真的存在」，程式說單一局部裡沒有。第二次：校對時我把搜尋範圍拉大，程式說**和**裡面有。第一次的修正寫進了 §4.5 的 IMPORTANT，第二次的修正把那個 IMPORTANT 又改了一遍 ——**「搜尋結果不是定理」這句話，本章示範了兩次，第二次是打自己的臉。**
 
 > **配套範例腳本**：`examples/ch06_game_values/ex02_value_census.py`
 
@@ -860,16 +919,18 @@ for k in range(1, 7):
 
 #### 練習 6.4
 
-§4.5 說「掃了 7,611 個局部，真分數 0 個」。這是不是表示「圍棋局部的值不可能是真分數」？
+§4.5 說「掃了 40,000 個單一局部，真分數 0 個」。這是不是表示「圍棋局部的值不可能是真分數」？
 
 <details>
 <summary><b>解答</b></summary>
 
 **不是。** 那是一個**搜尋結果**，不是定理。它的正確讀法是：
 
-> 在「$\le 5\times5$ 的盤面、$\le 5$ 個空點、約定 6.1 的記分法」這個範圍內，沒有找到值是真分數的局部。
+> 在「$\le 5\times5$ 的盤面、一塊 $\le 4$ 個空點的**連通**區域、約定 6.1 的記分法」這個範圍內，沒有找到值是真分數的局部。
 
 要把它變成定理，需要證明「在約定 6.1 之下，任何局部的值都不可能是真分數」—— 而本書沒有這個證明。
+
+**而且這一次，範圍稍微放寬就找到反例了。** §4.5 下半段：把不相連的空點合起來（那是若干局部的**和**），7,075 個樣本裡出現了一個 $\tfrac12$。**這正是「搜尋結果不是定理」最貴的一課** —— 本書第一版的搜尋範圍太小，於是結論下得太強，校對時才被更大的搜尋推翻。
 
 **那要怎麼看待這個結果？** 它足以支撐一個**修正**：
 
@@ -915,7 +976,7 @@ print("  前者是數學，後者是經驗 —— 兩者的證據標準不一樣
 * **有些賽局既不大於、也不小於、也不等於 $0$。** 單官就是這種東西：$* = \{0\mid0\}$，$* \parallel 0$。它不值目，但值一個手番，而且 $* + * = 0$。
 * **走廊是一族由盤面算出來的值**：$C(1) = *$，$C(n) = \{n-1 \mid C(n-1)\}$。
 * **見合的精確定義是 $G = 0$**（後手勝），不是「兩個一樣大的地方」。
-* **半目在均值裡，不在值裡。** 7,611 個局部的普查裡，整數 1,943 個、非數 5,668 個、真分數 **0** 個。這推翻了本書大綱原本的說法 —— 而修正它的是程式，不是我。
+* **半目在均值裡，不在【單一局部的】值裡。** 40,000 個單一連通局部的普查裡，整數 12,938 個、非數 27,062 個、真分數 **0** 個。這推翻了本書大綱原本的說法。**而校對時把範圍放寬到「若干局部的和」，7,075 個樣本裡就出現了一個 $\tfrac12$** —— 於是連這條修正本身也被修正了一次。兩次都是程式推翻作者，不是作者想通。
 
 **接下來。** 本章把每個局部變成了一個數學物件，但還沒回答最重要的問題：**這些物件要怎麼比大小？** $\{2 \mid \{1\mid*\}\}$ 和 $\{5 \mid 1\}$，哪一個該先下？
 

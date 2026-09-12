@@ -25,6 +25,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from go_core.board import BLACK            # noqa: E402
 from go_core.render import render_ascii   # noqa: E402
 from go_core.sgf import load_sgf          # noqa: E402
 
@@ -32,6 +33,26 @@ BLOCK = re.compile(
     r"<!--\s*diagram:\s*([A-Za-z0-9_]+)\s*-->\s*\n```text\n(.*?)\n```\n(\*.*?\*)?",
     re.S,
 )
+
+
+def hidden_stones(name, board, labels):
+    """標籤放在有棋子的點上，會把那顆棋子【蓋掉】。
+
+    render_ascii 畫格子時 labels 排在棋子前面，所以 LB={"D5": "b"} 若 D5 有
+    白子，讀者看到的是一個空的 D5。校對時抓到過一次（ch05_ex1）：
+    圖說寫「黑下 a 提子」，而被提的那顆白子在圖上根本不存在。
+    """
+    from go_core.board import EMPTY, format_coord
+
+    out = []
+    for key, ch in (labels or {}).items():
+        pt = board._pt(key) if isinstance(key, str) else key
+        if board.grid[pt] != EMPTY:
+            who = "黑" if board.grid[pt] == BLACK else "白"
+            out.append(f"  [{name}] 標籤「{ch}」蓋掉了 "
+                       f"{format_coord(pt, board.n)} 上的{who}子 —— "
+                       f"改用 MA 標記，或在圖說裡直接寫座標")
+    return out
 
 
 def check_file(path):
@@ -51,6 +72,7 @@ def check_file(path):
             problems.append(f"  [{name}] 棋圖與 SGF 不一致")
         if not caption:
             problems.append(f"  [{name}] 缺少底下的「請看什麼」說明行（寫作規範 §4.3）")
+        problems += hidden_stones(name, board, labels)
 
     # 手打棋圖偵測：出現座標列但沒有 diagram 標記的 text 區塊
     for m in re.finditer(r"```text\n(.*?)\n```", text, re.S):
