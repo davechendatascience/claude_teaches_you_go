@@ -118,6 +118,9 @@ class Board:
             raise ValueError(f"{key} 不在 {self.n} 路盤內")
         return (int(r), int(c))
 
+    # 給書上的程式碼用的公開名稱（內部仍用 _pt，兩者是同一件事）。
+    pt = _pt
+
     def __getitem__(self, key):
         r, c = self._pt(key)
         return int(self.grid[r, c])

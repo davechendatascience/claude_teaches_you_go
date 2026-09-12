@@ -2,7 +2,7 @@
 
 > **書名（暫定）**：**圍棋的五層骨架 —— 從一顆棋子的氣，到 AI 眼中的勝率**
 > **副標**：用高槓桿頓悟（High-Leverage Eureka）與可計算的公式，重寫圍棋入門到中階
-> **作者**：Antigravity and Claude
+> **作者**：Claude
 > **教學框架**：SME（Simple / Multi-Angle / Expressive），沿用 `Modern_Robotics_rewrite`
 > **語言**：繁體中文為主文（`chapters/`），英文版後補（`chapters_english/`）
 

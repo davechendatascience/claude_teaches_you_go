@@ -1,6 +1,6 @@
 # 系統提示：用高槓桿頓悟原則撰寫圍棋（SME 框架．圍棋版）
 
-**作者**：Antigravity and Claude
+**作者**：Claude
 **教學框架**：Simple、Multi-Angle、Expressive（SME）
 **前作**：`Modern_Robotics_rewrite`（本文件是它的圍棋改編版）
 
