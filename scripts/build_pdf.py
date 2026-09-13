@@ -100,9 +100,14 @@ HEADER = r"""
       \IfFontExistsTF{PMingLiU}{\setmainfont{PMingLiU}}{}}}}
 \IfFontExistsTF{Microsoft JhengHei UI}{\setsansfont{Microsoft JhengHei UI}}{%
   \IfFontExistsTF{Microsoft JhengHei}{\setsansfont{Microsoft JhengHei}}{}}
-\IfFontExistsTF{MS Gothic}{\setmonofont{MS Gothic}[Scale=0.88]}{%
-  \IfFontExistsTF{NSimSun}{\setmonofont{NSimSun}[Scale=0.92]}{%
-    \IfFontExistsTF{Sarasa Mono TC}{\setmonofont{Sarasa Mono TC}[Scale=0.90]}{}}}
+% 等寬字型的順序：先要【零缺字】，再要【雙寬】。
+% MS Gothic 是日文字型，缺「值、啟、夠、稅、說」這些繁體字 ——
+% 校對時在 PDF 上看到「四層都口不出理由」才發現。所以它排最後。
+\IfFontExistsTF{Sarasa Mono TC}{\setmonofont{Sarasa Mono TC}[Scale=0.92]}{%
+  \IfFontExistsTF{MingLiU}{\setmonofont{MingLiU}[Scale=0.98]}{%
+    \IfFontExistsTF{Noto Sans Mono CJK TC}{\setmonofont{Noto Sans Mono CJK TC}[Scale=0.90]}{%
+      \IfFontExistsTF{NSimSun}{\setmonofont{NSimSun}[Scale=0.94]}{%
+        \IfFontExistsTF{MS Gothic}{\setmonofont{MS Gothic}[Scale=0.88]}{}}}}}
 \XeTeXlinebreaklocale "zh"
 \XeTeXlinebreakskip = 0pt plus 1pt
 
@@ -345,6 +350,64 @@ def have_sty(name):
         return False
 
 
+# 等寬字型必須滿足兩件事，而兩件都會安靜地壞掉：
+#   1. 雙寬（漢字 = 兩個半形字），否則每一張棋圖與圖表都歪掉。
+#   2. 蓋得住書裡用到的每一個字。MS Gothic 是日文字型，缺「說」「值」
+#      這幾個繁體字 —— 校對時在 PDF 上看到「四層都口不出理由」才發現。
+MONO_CANDIDATES = [
+    ("Sarasa Mono TC", None),
+    ("MingLiU", r"C:\Windows\Fonts\mingliu.ttc"),
+    ("Noto Sans Mono CJK TC", None),
+    ("NSimSun", r"C:\Windows\Fonts\simsun.ttc"),
+    ("MS Gothic", r"C:\Windows\Fonts\msgothic.ttc"),
+]
+
+
+def mono_chars():
+    """書裡所有會用等寬字型排的中日文字元（棋圖、圖表）。"""
+    out = set()
+    for f in sorted((ROOT / "figures").glob("*.txt")):
+        out |= {c for c in f.read_text(encoding="utf-8")
+                if 0x3000 <= ord(c) <= 0x9FFF}
+    for f in sorted((ROOT / "chapters").glob("*.md")):
+        t = f.read_text(encoding="utf-8")
+        for m in re.finditer(r"```text\n(.*?)\n```", t, re.S):
+            out |= {c for c in m.group(1) if 0x3000 <= ord(c) <= 0x9FFF}
+    return out
+
+
+def check_mono_font():
+    """報告第一個【裝得到】的候選字型缺不缺字。缺就警告，不擋建置。"""
+    try:
+        from fontTools.ttLib import TTCollection, TTFont
+    except ImportError:
+        return
+    need = mono_chars()
+    for name, path in MONO_CANDIDATES:
+        if not path or not os.path.exists(path):
+            continue
+        cov = set()
+        try:
+            fonts = TTCollection(path, lazy=True).fonts
+        except Exception:
+            try:
+                fonts = [TTFont(path, lazy=True)]
+            except Exception:
+                continue
+        for ft in fonts:
+            try:
+                cov |= set(ft.getBestCmap())
+            except Exception:
+                pass
+        missing = sorted(c for c in need if ord(c) not in cov)
+        if missing:
+            print(f"  [!] 等寬字型 {name} 缺 {len(missing)} 字："
+                  f"{''.join(missing[:20])} —— 棋圖裡那些字會變成豆腐")
+        else:
+            print(f"  等寬字型 {name}：{len(need)} 個中文字全部蓋得住")
+        return
+
+
 def collect(chapters):
     files = sorted((ROOT / "chapters").glob("ch*.md"))
     if chapters:
@@ -397,6 +460,7 @@ def build(chapters=None, keep_tex=False, html=False):
     files = collect(chapters)
     if not files:
         sys.exit("chapters/ 底下沒有東西可以排。")
+    check_mono_font()
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp = Path(tmp)
