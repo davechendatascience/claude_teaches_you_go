@@ -101,7 +101,7 @@ python scripts/build_pdf.py --chapters 2 14  # 只排某幾章（改版式時用
 python scripts/build_pdf.py --html           # 另外輸出單檔 HTML
 ```
 
-需要 pandoc 與 xelatex。全書約 **457 頁**。
+需要 pandoc 與 xelatex。全書 **458 頁**。
 
 排中文書有三件事非做不可，而 `build_pdf.py` 的註解把理由寫在旁邊：
 
@@ -110,6 +110,7 @@ python scripts/build_pdf.py --html           # 另外輸出單檔 HTML
 | GitHub 的 `> [!EUREKA]` 徽章 pandoc 不認識 | 換成一對 LaTeX 巨集（不能用環境 —— pandoc 會把 `\begin{X}…\end{X}` 整段當成 raw，裡面的 markdown 就不解析了） |
 | **等寬字型必須是雙寬的** | 棋圖與圖表都是用「一個中文字 = 兩個半形字」排出來的。用一般等寬字型，每一張棋圖都會歪掉。這裡用 MS Gothic |
 | **粗體要真的是粗體** | Windows 內建的 Noto Serif TC 是可變字型，XeTeX 只取得到單一實例（實測是 ExtraLight），`\textbf` 完全沒有作用。改用有獨立 Bold 字面的微軟正黑體 |
+| **等寬字型還要蓋得住每一個字** | MS Gothic 是日文字型，缺「值、啟、夠、稅、說」這些繁體字 —— 在 PDF 上看到「四層都口不出理由」才發現。改用 MingLiU（零缺字，而且同樣是 2.00 雙寬）。`build_pdf.py` 每次建置都會檢查一次覆蓋率 |
 
 另外，缺套件的 TeX 安裝（`footnote`、`bookmark`）會就地補上空殼，
 不需要連網安裝 —— 那兩個套件對這本書都只是錦上添花。
