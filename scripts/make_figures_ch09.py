@@ -45,6 +45,28 @@ def wall4_bouzy():
     return render_field(bouzy_field(b, 4), b, unit=1.0)
 
 
+def wall4_stats():
+    """牆的【背後】與【前方】，每手平均多圍幾點模樣。
+
+    牆在 D 列。背後 = A–C 三列；前方 = F 列以後（D、E 是牆本身與它
+    緊貼的一路，兩邊都不算）。這兩個數字正文會引用，所以在這裡算。
+    """
+    b = wall_board(4)
+    mm = marginal_map(b, BLACK, theta=1.0, lam=LAM)
+    cols = "ABCDEFGHJKLMN"
+    back, front = [], []
+    for (r, c), v in mm.items():
+        if b.grid[r, c] != 0:
+            continue
+        name = cols[c]
+        if name in "ABC":
+            back.append(v)
+        elif name not in "DE":
+            front.append(v)
+    return (sum(back) / len(back), max(back),
+            sum(front) / len(front), max(front))
+
+
 def wall4_marginal():
     """每一個空點：在那裡多下一手，模樣（I > 1）大幾點。"""
     b = wall_board(4)
@@ -61,6 +83,11 @@ def wall4_marginal():
                 cells.append("." if v <= 0 else
                              str(min(9, (v + 4) // 5)))
         rows.append(" ".join(cells))
+    bm, bx, fm, fx = wall4_stats()
+    rows.append("")
+    rows.append(f"  牆的背後（A-C 列）：每手平均 +{bm:.2f} 點（最大 {bx}）")
+    rows.append(f"  牆的前方（F 列以後）：每手平均 +{fm:.2f} 點（最大 {fx}）")
+    rows.append(f"  差 {fm / bm:.0f} 倍。")
     return "\n".join(rows)
 
 
