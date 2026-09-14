@@ -1,0 +1,19 @@
+# 《Claude 教你圍棋》的 Python 環境
+#
+#   python -m venv .venv && source .venv/bin/activate
+#   pip install -r requirements.txt
+#
+# 其餘全部是標準函式庫（Python 3.10+）。
+
+# 計算核心 go_core/、examples/、章節裡的程式區塊
+numpy>=1.24
+
+# tests/
+pytest>=7.0
+
+# scripts/build_pdf.py 用來檢查等寬字型的缺字覆蓋率；沒裝只會跳過檢查，不擋建置
+fonttools>=4.40
+
+# 排 PDF 另外需要系統工具（不是 pip 套件）：
+#   pandoc、xelatex（TeX Live 或 MiKTeX）
+#   mmdc（@mermaid-js/mermaid-cli，選用：沒有就不畫 Mermaid 流程圖）
